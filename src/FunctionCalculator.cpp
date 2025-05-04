@@ -21,11 +21,17 @@ void FunctionCalculator::run()
 {
     do
     {
-        m_ostr << '\n';
-        printOperations();
-        m_ostr << "Enter command ('help' for the list of available commands): ";
-        const auto action = readAction();
-        runAction(action);
+        try {
+            m_ostr << '\n';
+            printOperations();
+            m_ostr << "Enter command ('help' for the list of available commands): ";
+            const auto action = readAction();
+            runAction(action);
+        }
+        catch (const std::invalid_argument& e) {
+            m_ostr << "Error: " << e.what() << "\n";
+            //printOperations();  // print the exists func
+        }
     } while (m_running);
 }
 
@@ -134,7 +140,7 @@ void FunctionCalculator::runAction(Action action)
             break;
 
         case Action::Invalid:
-            m_ostr << "Command not found\n";
+            throw std::invalid_argument("Command not found\n");
             break;
 
         case Action::Eval:         eval();                     break;
