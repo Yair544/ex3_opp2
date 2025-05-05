@@ -1,0 +1,5 @@
+# Ignore Visual Studio folder
+.vs/
+
+# Ignore specific build output
+out/build/x64-Debug/

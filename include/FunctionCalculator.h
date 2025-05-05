@@ -26,23 +26,32 @@ private:
     template <typename FuncType>
     void binaryFunc()
     {
-        if (auto f0 = readOperationIndex(), f1 = readOperationIndex(); f0 && f1)
-        {
-            m_operations.push_back(std::make_shared<FuncType>(m_operations[*f0], m_operations[*f1]));
-        }
+        auto f0 = readOperationIndex();
+        auto f1 = readOperationIndex();
+
+        if (!f0 || !f1)
+            throw std::invalid_argument("Invalid arguments: operation does not exist in the operation list.");
+        m_operations.push_back(std::make_shared<FuncType>(m_operations[*f0], m_operations[*f1]));
     }
 
     template <typename FuncType>
     void unaryFunc()
     {
-    	m_operations.push_back(std::make_shared<FuncType>());
-	}
+        auto idx = readOperationIndex();
+        if (!idx)
+            throw std::invalid_argument("Invalid arguments: operation does not exist in the operation list.");
+        m_operations.push_back(std::make_shared<FuncType>(m_operations[*idx]));
+    }
+
     template <typename FuncType>
     void unaryWithIntFunc()
     {
-        int i = 0;
-        m_istr >> i;
-        m_operations.push_back(std::make_shared<FuncType>(i));
+        int value = 0;
+        m_istr >> value;
+
+        if (!m_istr)
+            throw std::invalid_argument("Invalid arguments: operation does not exist in the operation list.");
+        m_operations.push_back(std::make_shared<FuncType>(value));
     }
     void printOperations() const;
 
