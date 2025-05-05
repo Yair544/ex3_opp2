@@ -44,6 +44,13 @@ void FunctionCalculator::eval()
 		int inputCount = operation->inputCount();
         int size = 0;
         m_istr >> size;
+
+        if (!m_istr)
+            throw std::invalid_argument("Expected matrix size.");
+
+        if (size <= 0 || size > MAX_MAT_SIZE)
+            throw std::invalid_argument("Matrix size must be between 1 and " + std::to_string(MAX_MAT_SIZE));
+
 		auto matrixVec = std::vector<Operation::T>();
         if (inputCount > 1)
             m_ostr << "\nPlease enter " << inputCount << " matrices:\n";

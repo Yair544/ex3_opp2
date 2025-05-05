@@ -3,6 +3,7 @@
 #include <vector>
 #include <iostream>
 
+constexpr int MAX_MAT_SIZE = 5;
 
 template <typename T>
 class SquareMatrix
