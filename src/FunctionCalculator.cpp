@@ -6,8 +6,10 @@
 #include "Identity.h"
 #include "Transpose.h"
 #include "Scalar.h"
+#include "ReadCommand.h"
 
 #include <iostream>
+#include <fstream>
 #include <algorithm>
 
 
@@ -154,6 +156,7 @@ void FunctionCalculator::runAction(Action action)
         case Action::Add:          binaryFunc<Add>();          break;
         case Action::Sub:          binaryFunc<Sub>();          break;
         case Action::Comp:         binaryFunc<Comp>();         break;
+        case Action::Read:         ReadCommand::run(*this, m_istr); break;
         case Action::Del:          del();                      break;
         case Action::Help:         help();                     break;
         case Action::Exit:         exit();                     break;
@@ -199,6 +202,11 @@ FunctionCalculator::ActionMap FunctionCalculator::createActions() const
             Action::Comp
         },
         {
+            "read",
+            " file_path - reads and executes commands from a file",
+            Action::Read
+        },
+        {
             "del",
             "(ete) num - delete operation #num from the operation list",
             Action::Del
@@ -225,3 +233,38 @@ FunctionCalculator::OperationList FunctionCalculator::createOperations() const
         std::make_shared<Transpose>(),
     };
 }
+
+////////////////////////////////////////////////////////
+void FunctionCalculator::executeFromFile(const std::string& filePath)
+{
+    std::ifstream file(filePath);
+    if (!file)
+        throw std::invalid_argument("Failed to open file: " + filePath);
+
+    FunctionCalculator nested(file, m_ostr);
+    nested.m_operations = this->m_operations;
+    nested.m_actions = this->m_actions;
+
+    while (file)
+    {
+        try {
+            auto action = nested.readAction();
+            nested.runAction(action);
+        }
+        catch (const std::invalid_argument& e) {
+            m_ostr << "Error (in file): " << e.what() << "\n";
+        }
+    }
+
+    this->m_operations = nested.m_operations;
+}
+
+
+
+//void ReadCommand::run(FunctionCalculator& calc, std::istream& args)
+//{
+//    std::string filePath;
+//    args >> filePath;
+//
+//    calc.executeFromFile(filePath);
+//}

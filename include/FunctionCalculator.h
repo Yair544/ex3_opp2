@@ -16,6 +16,7 @@ class FunctionCalculator
 public:
     FunctionCalculator(std::istream& istr, std::ostream& ostr);
     void run();
+    void executeFromFile(const std::string& filePath);
 
 private:
     void eval();
@@ -66,6 +67,7 @@ private:
         Add,
         Mul,
         Comp,
+        Read,
         Del,
         Help,
         Exit,
@@ -81,7 +83,7 @@ private:
     using ActionMap = std::vector<ActionDetails>;
     using OperationList = std::vector<std::shared_ptr<Operation>>;
 
-    const ActionMap m_actions;
+    ActionMap m_actions;
     OperationList m_operations;
     bool m_running = true;
     std::istream& m_istr;
