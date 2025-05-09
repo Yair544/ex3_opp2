@@ -57,14 +57,16 @@ void FunctionCalculator::eval()
         if (inputCount > 1)
             m_ostr << "\nPlease enter " << inputCount << " matrices:\n";
 
-		for (int i = 0; i < inputCount; ++i)
-		{
+        for (int i = 0; i < inputCount; ++i)
+        {
             auto input = Operation::T(size);
             m_ostr << "\nEnter a " << size << "x" << size << " matrix:\n";
-            m_istr >> input;
-			matrixVec.push_back(input);
 
-		}
+            std::cin >> input;
+
+            matrixVec.push_back(input);
+        }
+
         m_ostr << "\n";
         operation->print(m_ostr, matrixVec);
         m_ostr << " = \n" << operation->compute(matrixVec);
