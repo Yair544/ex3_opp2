@@ -1,4 +1,4 @@
-#include "FunctionCalculator.h"
+﻿#include "FunctionCalculator.h"
 #include "SquareMatrix.h"
 #include "Add.h"
 #include "Sub.h"
@@ -11,6 +11,7 @@
 #include <iostream>
 #include <fstream>
 #include <algorithm>
+#include <sstream>
 
 
 FunctionCalculator::FunctionCalculator(std::istream& istr, std::ostream& ostr)
@@ -18,22 +19,24 @@ FunctionCalculator::FunctionCalculator(std::istream& istr, std::ostream& ostr)
 {
 }
 
-
 void FunctionCalculator::run()
 {
-    do
-    {
+    do {
+        m_ostr << '\n';
+        printOperations();
+        m_ostr << "Enter command ('help' for the list of available commands): ";
+
+        std::string line;
+        if (!std::getline(std::cin, line))
+            break;
+
         try {
-            m_ostr << '\n';
-            printOperations();
-            m_ostr << "Enter command ('help' for the list of available commands): ";
-            const auto action = readAction();
-            runAction(action);
+            executeSingleCommand(line);
         }
         catch (const std::invalid_argument& e) {
             m_ostr << "Error: " << e.what() << "\n";
-            //printOperations();  // print the exists func
         }
+
     } while (m_running);
 }
 
@@ -50,8 +53,8 @@ void FunctionCalculator::eval()
         if (!m_istr)
             throw std::invalid_argument("Expected matrix size.");
 
-        if (size <= 0 || size > MAX_MAT_SIZE)
-            throw std::invalid_argument("Matrix size must be between 1 and " + std::to_string(MAX_MAT_SIZE));
+        if (size <= 1 || size > MAX_MAT_SIZE)
+            throw std::invalid_argument("Matrix size must be between 2 and " + std::to_string(MAX_MAT_SIZE));
 
 		auto matrixVec = std::vector<Operation::T>();
         if (inputCount > 1)
@@ -62,7 +65,7 @@ void FunctionCalculator::eval()
             auto input = Operation::T(size);
             m_ostr << "\nEnter a " << size << "x" << size << " matrix:\n";
 
-            std::cin >> input;
+            m_istr >> input;
 
             matrixVec.push_back(input);
         }
@@ -175,7 +178,7 @@ FunctionCalculator::ActionMap FunctionCalculator::createActions() const
     {
         {
             "eval",
-            "(uate) num n - compute the result of function #num on an n�n matrix "
+            "(uate) num n - compute the result of function #num on an n׳n matrix "
 			"(that will be prompted)",
             Action::Eval
         },
@@ -243,30 +246,89 @@ void FunctionCalculator::executeFromFile(const std::string& filePath)
     if (!file)
         throw std::invalid_argument("Failed to open file: " + filePath);
 
-    FunctionCalculator nested(file, m_ostr);
-    nested.m_operations = this->m_operations;
-    nested.m_actions = this->m_actions;
+    std::string line;
+    int lineNumber = 0;
 
-    while (file)
+    while (std::getline(file, line))
     {
+        ++lineNumber;
+
         try {
-            auto action = nested.readAction();
-            nested.runAction(action);
+            executeSingleCommand(line);
         }
-        catch (const std::invalid_argument& e) {
-            m_ostr << "Error (in file): " << e.what() << "\n";
+        catch (const std::exception& e)
+        {
+            m_ostr << "Error (in file, line " << lineNumber << "): " << e.what() << "\n";
+            if (!askUserToContinue()) break;
         }
     }
-
-    this->m_operations = nested.m_operations;
 }
 
 
+bool FunctionCalculator::askUserToContinue()
+{
+    m_ostr << "Continue reading the file? (y/n): ";
+    std::string choice;
+    std::cin >> choice;
+    return choice == "y" || choice == "Y";
+}
 
-//void ReadCommand::run(FunctionCalculator& calc, std::istream& args)
-//{
-//    std::string filePath;
-//    args >> filePath;
-//
-//    calc.executeFromFile(filePath);
-//}
+void FunctionCalculator::executeSingleCommand(const std::string& line)
+{
+    std::istringstream lineStream(line);
+    std::string command;
+    lineStream >> command;
+
+    const auto it = std::ranges::find(m_actions, command, &ActionDetails::command);
+    if (it == m_actions.end())
+        throw std::invalid_argument("Command not found");
+
+    std::vector<std::string> tokens;
+    std::string token;
+    while (lineStream >> token)
+        tokens.push_back(token);
+
+    // Argument validation
+    switch (it->action)
+    {
+    case Action::Add:
+    case Action::Sub:
+    case Action::Comp:
+        if (tokens.size() != 2)
+            throw std::invalid_argument("Command '" + command + "' expects exactly 2 arguments.");
+        break;
+
+    case Action::Scal:
+    case Action::Del:
+        if (tokens.size() != 1)
+            throw std::invalid_argument("Command '" + command + "' expects exactly 1 argument.");
+        break;
+
+    case Action::Read:
+        if (tokens.size() != 1)
+            throw std::invalid_argument("Command 'read' expects a single file path.");
+        break;
+
+    case Action::Help:
+    case Action::Exit:
+        if (!tokens.empty())
+            throw std::invalid_argument("Command '" + command + "' does not take any arguments.");
+        break;
+
+    default:
+        break;
+    }
+
+    std::ostringstream cleaned;
+    for (const auto& s : tokens)
+        cleaned << s << ' ';
+    std::istringstream argsStream(cleaned.str());
+
+    FunctionCalculator temp(argsStream, m_ostr);
+    temp.m_operations = this->m_operations;
+    temp.m_actions = this->m_actions;
+
+    temp.runAction(it->action);
+    this->m_operations = temp.m_operations;
+}
+

@@ -96,4 +96,6 @@ private:
 
     ActionMap createActions() const;
     OperationList createOperations() const ;
+    bool askUserToContinue();
+    void executeSingleCommand(const std::string& line);
 };
